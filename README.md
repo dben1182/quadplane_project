@@ -1,7 +1,4 @@
-# Quadplane Trajectory Tracker Project
+# Modified Quadplane Trajectory Tracker Project
 
-To run, navigate to the trajectory_tracker directory and run:
-
-`python3 ./trajectory_tracker_sim.py`
-
-Watch project video, [here](https://youtu.be/Ril7SRwQxD4).
+This is a modification of Mason Peterson's code from the Quadplane Trajectory Tracker Project. 
+With this system, I am going to implement a modification of the nonlinear control allocation piece
