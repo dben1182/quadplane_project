@@ -23,7 +23,9 @@ CA_RUDDER = 7
 class NonlinearControlAllocation():
     def __init__(self):
         self.previous_solution = CA.init_actuators
+        
         self.max_iter = CA.max_iter
+        #creates the array creating the bounds the actuators have within the framework
         self.actuator_bounds = [(0.0,  1.0),
                                 (0.0,  1.0),
                                 (0.0,  1.0),
@@ -43,7 +45,7 @@ class NonlinearControlAllocation():
         return self._formulate_ctrl_msg(actuator_commands)
 
     def _compute_nonlinear_optimization(self, thrust_torque_desired, v_body, airspeed):
-
+        
         x0 = self.previous_solution
         
         # Non linear optimizer gets optimization output and gradient from nonlinear_ctrl_optimization output
@@ -54,16 +56,17 @@ class NonlinearControlAllocation():
             bounds=self.actuator_bounds,
             jac=True,
             options={'maxiter': self.max_iter})
+        
+        #stores the previous solution as the current solution. Helps significantly with computational efficiency
+        #and also with accuracy of the results
         self.previous_solution = res.x
-        # print(res.x)
-        # print('ca:')
-        # print(thrust_torque_desired)
-        # print(calc_thrust_torque_achieved(res.x, v_body, airspeed))
         return res.x
+    
 
-    def _formulate_ctrl_msg(self, actuator_commands):
+    #defines a function that formulates a new control message from an array of 
+    def _formulate_ctrl_msg(self, actuator_commands: np.ndarray) -> MsgDelta:
         ctrl_msg = MsgDelta()
-
+        #converts the throttle commands to part of the mssage
         ctrl_msg.throttle_0 = actuator_commands[CA_ROTOR_FRONT_RIGHT]
         ctrl_msg.throttle_1 = actuator_commands[CA_ROTOR_FRONT_LEFT]
         ctrl_msg.throttle_2 = actuator_commands[CA_ROTOR_BACK_RIGHT]
@@ -86,10 +89,9 @@ def nonlinear_ctrl_optimization(x, thrust_torque_desired, v_body, airspeed, prev
     Va_lift = v_body.item(2)
     Va_pull = v_body.item(0)
 
-    thrust, torque, thrust_der, torque_der = \
-        rotor_thrust_torque_der(x[CA_ROTOR_FRONT_RIGHT:CA_ROTOR_PULLER + 1], 
-        [Va_lift, Va_lift, Va_lift, Va_lift, Va_pull],
-        VTOL.prop_dirs.tolist())
+    thrust, torque, thrust_der, torque_der = rotor_thrust_torque_der(x[CA_ROTOR_FRONT_RIGHT:CA_ROTOR_PULLER + 1], 
+                                                                    [Va_lift, Va_lift, Va_lift, Va_lift, Va_pull],
+                                                                    VTOL.prop_dirs.tolist())
 
     # Compute elevon forces
     elevator_force_coefs = calc_elevator_force(v_body, airspeed)
