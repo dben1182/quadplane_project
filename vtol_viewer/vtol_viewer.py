@@ -6,11 +6,14 @@ vtolsim_python: vtol viewer (for chapter 2)
         4/15/2019 - BGM
         3/31/2020 - RWB
 """
-import sys
-sys.path.append("..")
+import os, sys
+# insert parent directory at beginning of python search path
+from pathlib import Path
+sys.path.insert(0,os.fspath(Path(__file__).parents[1]))
 from vtol_viewer.draw_vtol import DrawVTOL
 import numpy as np
 import pyqtgraph as pg
+from PyQt5 import QtWidgets
 import pyqtgraph.opengl as gl
 import pyqtgraph.Vector as Vector
 # from vtol_viewer.draw_vtol import DrawVTOL
@@ -19,7 +22,7 @@ import pyqtgraph.Vector as Vector
 class VTOLViewer():
     def __init__(self):
         # initialize Qt gui application and window
-        self.app = pg.QtGui.QApplication([])  # initialize QT
+        self.app = QtWidgets.QApplication(sys.argv)
         self.window = gl.GLViewWidget()  # initialize the view object
         self.window.setWindowTitle('VTOL Viewer')
         self.window.setGeometry(0, 0, 1000, 1000)  # args: upper_left_x, upper_right_y, width, height

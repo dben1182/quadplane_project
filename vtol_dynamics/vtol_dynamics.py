@@ -36,27 +36,57 @@ STATE_ANG_Q = 11
 STATE_ANG_R = 12
 
 class VTOLDynamics:
-    def __init__(self, Ts):
+    #arguments:
+    #1. Time sample period of the simulation
+    #2. velocity initialized: bool to determine whether we are initializing our velocity
+    #3. Initial velocity: float of initial velocity
+    def __init__(self, Ts: float, velocityInitialized: bool = False, initialVelocity: float = 10.0):
         self._ts_simulation = Ts
-        # set initial states based on parameter file
-        # _state is the 13x1 internal state of the aircraft that is being propagated:
-        # _state = [pn, pe, pd, u, v, w, e0, e1, e2, e3, p, q, r]
-        # We will also need a variety of other elements that are functions of the _state and the wind.
-        # self.true_state is a 19x1 vector that is estimated and used by the autopilot to control the aircraft:
-        # true_state = [pn, pe, h, Va, alpha, beta, phi, theta, chi, p, q, r, Vg, wn, we, psi, gyro_bx, gyro_by, gyro_bz]
-        self._state = np.array([[VTOL.north0],  # (0)
-                               [VTOL.east0],   # (1)
-                               [VTOL.down0],   # (2)
-                               [VTOL.u0],    # (3)
-                               [VTOL.v0],    # (4)
-                               [VTOL.w0],    # (5)
-                               [VTOL.e0],    # (6)
-                               [VTOL.e1],    # (7)
-                               [VTOL.e2],    # (8)
-                               [VTOL.e3],    # (9)
-                               [VTOL.p0],    # (10)
-                               [VTOL.q0],    # (11)
-                               [VTOL.r0]])   # (12)
+
+        #case the velocity is initialized to another set value 
+        if velocityInitialized:
+            # set initial states based on parameter file
+            # _state is the 13x1 internal state of the aircraft that is being propagated:
+            # _state = [pn, pe, pd, u, v, w, e0, e1, e2, e3, p, q, r]
+            # We will also need a variety of other elements that are functions of the _state and the wind.
+            # self.true_state is a 19x1 vector that is estimated and used by the autopilot to control the aircraft:
+            # true_state = [pn, pe, h, Va, alpha, beta, phi, theta, chi, p, q, r, Vg, wn, we, psi, gyro_bx, gyro_by, gyro_bz]
+            self._state = np.array([[VTOL.north0],  # (0)
+                                   [VTOL.east0],   # (1)
+                                   [VTOL.down0],   # (2)
+                                   [initialVelocity],    # (3)
+                                   [VTOL.v0],    # (4)
+                                   [VTOL.w0],    # (5)
+                                   [VTOL.e0],    # (6)
+                                   [VTOL.e1],    # (7)
+                                   [VTOL.e2],    # (8)
+                                   [VTOL.e3],    # (9)
+                                   [VTOL.p0],    # (10)
+                                   [VTOL.q0],    # (11)
+                                   [VTOL.r0]])   # (12)
+        #otherwise, sets it         
+        else:
+            # set initial states based on parameter file
+            # _state is the 13x1 internal state of the aircraft that is being propagated:
+            # _state = [pn, pe, pd, u, v, w, e0, e1, e2, e3, p, q, r]
+            # We will also need a variety of other elements that are functions of the _state and the wind.
+            # self.true_state is a 19x1 vector that is estimated and used by the autopilot to control the aircraft:
+            # true_state = [pn, pe, h, Va, alpha, beta, phi, theta, chi, p, q, r, Vg, wn, we, psi, gyro_bx, gyro_by, gyro_bz]
+            self._state = np.array([[VTOL.north0],  # (0)
+                                   [VTOL.east0],   # (1)
+                                   [VTOL.down0],   # (2)
+                                   [VTOL.u0],    # (3)
+                                   [VTOL.v0],    # (4)
+                                   [VTOL.w0],    # (5)
+                                   [VTOL.e0],    # (6)
+                                   [VTOL.e1],    # (7)
+                                   [VTOL.e2],    # (8)
+                                   [VTOL.e3],    # (9)
+                                   [VTOL.p0],    # (10)
+                                   [VTOL.q0],    # (11)
+                                   [VTOL.r0]])   # (12)            
+
+
         # store wind data for fast recall since it is used at various points in simulation
         self._wind = np.array([[0.], [0.], [0.]])  # wind in NED frame in meters/sec
         # store forces to avoid recalculation in the sensors function

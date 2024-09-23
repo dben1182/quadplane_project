@@ -14,6 +14,7 @@ from vtol_dynamics.vtol_dynamics import VTOLDynamics
 from chap4.wind_simulation import WindSimulation
 from message_types.msg_delta import MsgDelta
 from message_types.msg_state import MsgState
+from vtol_control_allocation.bifracated_nonlinear_control_allocation import BifracatedNonlinearControlAllocation
 from vtol_control_allocation.nonlinear_control_allocation import NonlinearControlAllocation
 from low_level_controller.rate_control import RateControl
 from pitch_free_trajectory_tracker import PitchFreeTrajectoryTracker
@@ -34,7 +35,7 @@ def main():
 
     # initialize elements of the architecture
     wind = WindSimulation(SIM.ts_simulation)
-    vtol = VTOLDynamics(SIM.ts_simulation)
+    vtol = VTOLDynamics(SIM.ts_simulation, velocityInitialized=True, initialVelocity=10.0)
 
     # INITIALIZE TRAJECTORIES
     traj = TRAJ.tcl

@@ -4,10 +4,11 @@ vtolsim_python: drawing tools
     - Update history:
         4/15/2019 - BGM
 """
-import sys
-sys.path.append('..')
+import os, sys
+# insert parent directory at beginning of python search path
+from pathlib import Path
+sys.path.insert(0,os.fspath(Path(__file__).parents[1]))
 import numpy as np
-from numpy.typing import _256Bit
 import pyqtgraph.opengl as gl
 from tools.rotations import Euler2Rotation
 

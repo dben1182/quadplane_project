@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+import sys
 from threading import Lock
 import numpy as np
 from collections import defaultdict
+from PyQt5 import QtWidgets
 import pyqtgraph as pg
 from pyqtgraph import ViewBox
 import argparse
@@ -46,10 +48,11 @@ class Plotter:
 
         # initialize Qt gui application and window
         self.default_window_size = (1000, 800)
-        self.app = pg.QtGui.QApplication([])
-        self.window = pg.GraphicsWindow(title=window_title)
-        self.window.resize(*self.default_window_size)
+        self.app = QtWidgets.QApplication(sys.argv)
+        self.window = pg.GraphicsLayoutWidget(title=window_title)
         self.window.setBackground(self.background_color)
+        self.window.setWindowTitle('VTOL Viewer')
+        self.window.setGeometry(0, 0, 1000, 1000)  # args: upper_left_x, upper_right_y, width, height
         self.old_windows = []
         self.row_plot_count = 0
 

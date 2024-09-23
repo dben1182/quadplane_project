@@ -1,4 +1,7 @@
-#/usr/bin/python3
+#this simulation file is a lead up to the actual goal, which is a fully working 
+#bifracated system. This one is simply a mock up, where we just do the control allocation
+#test piece for the fixed wing (control surface and puller motor), and perform experiments on
+#that to see if we can get that working and tuned up for maximum efficiency
 
 import os, sys
 # insert parent directory at beginning of python search path
@@ -14,7 +17,7 @@ from vtol_dynamics.vtol_dynamics import VTOLDynamics
 from chap4.wind_simulation import WindSimulation
 from message_types.msg_delta import MsgDelta
 from message_types.msg_state import MsgState
-from vtol_control_allocation.nonlinear_control_allocation import NonlinearControlAllocation
+from vtol_control_allocation.surfaces_nonlinear_control_allocation import SurfacesNonlinearControlAllocation
 from low_level_controller.rate_control import RateControl
 from pitch_free_trajectory_tracker import PitchFreeTrajectoryTracker
 from pitch_control import PitchControl
@@ -22,8 +25,7 @@ from attitude_control import AttitudeControl
 from tools.msg_convert import *
 from tools.rotations import Quaternion2Euler, Rotation2Quaternion, Rotation2Euler, Quaternion2Rotation
 
-# trajectories
-import vtol_trajectory_generator.trajectories as TRAJ
+import vtol_trajectory_generator.fixedWingTrajectories as TRAJ
 
 
 def main():
@@ -54,7 +56,7 @@ def main():
 
     #initialize low level control
     rate_control = RateControl(ts_control=SIM.ts_control)
-    control_alloc = NonlinearControlAllocation()
+    control_alloc = SurfacesNonlinearControlAllocation()
 
     # initialize command message
     delta = MsgDelta()

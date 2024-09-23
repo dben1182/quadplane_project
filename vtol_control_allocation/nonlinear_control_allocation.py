@@ -10,6 +10,7 @@ import parameters.quadplane_parameters as VTOL
 import parameters.control_allocation_parameters as CA
 from message_types.msg_delta import MsgDelta
 from tools.rotations import Quaternion2Euler
+from message_types.msg_state import MsgState
 
 CA_ROTOR_FRONT_RIGHT = 0
 CA_ROTOR_FRONT_LEFT = 1
@@ -35,7 +36,7 @@ class NonlinearControlAllocation():
                                 (-1.0, 1.0),
                                 (-1.0, 1.0)]
 
-    def update(self, thrust, torques, state, airspeed):
+    def update(self, thrust: np.ndarray, torques: np.ndarray, state: np.ndarray, airspeed: float)-> MsgDelta:
 
         thrust_torque_desired = np.concatenate([thrust, torques], axis=0).reshape(-1)
         v_body = state[3:6]
@@ -44,7 +45,7 @@ class NonlinearControlAllocation():
 
         return self._formulate_ctrl_msg(actuator_commands)
 
-    def _compute_nonlinear_optimization(self, thrust_torque_desired, v_body, airspeed):
+    def _compute_nonlinear_optimization(self, thrust_torque_desired: np.ndarray, v_body: np.ndarray, airspeed: float)->np.ndarray:
         
         x0 = self.previous_solution
         
@@ -80,7 +81,7 @@ class NonlinearControlAllocation():
 
 # Possible deltas are fed into this function as x and are optimized to provide smallest 
 # difference between commanded and achieved thrusts and torques
-def nonlinear_ctrl_optimization(x, thrust_torque_desired, v_body, airspeed, prev_solution):
+def nonlinear_ctrl_optimization(x: np.ndarray, thrust_torque_desired: np.ndarray, v_body: np.ndarray, airspeed: float, prev_solution: np.ndarray)->tuple[float, np.ndarray]:
     K_Tau = CA.K_Tau
     K_delta = CA.K_delta(airspeed)
     x_des = CA.actuators_desired
