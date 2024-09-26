@@ -10,8 +10,16 @@ def K_delta(airspeed):
 # initial actuator guess
 init_actuators = np.array([0.6, 0.6, 0.6, .6, 0.2, 0.0, 0.0, 0.0])
 
+
+#creates the initial actuator guess for the contorl suraces
+#these are forward
+init_actuators_surfaces = init_actuators[4:8]
+
 # minimum-energy actuator setpoints
 actuators_desired = np.zeros(8)
+
+#minimum energy surfaces actuator setpoints
+actuators_surfaces_desired = np.zeros(4)
 
 # max iterations for nonlinear solver
 max_iter = 50

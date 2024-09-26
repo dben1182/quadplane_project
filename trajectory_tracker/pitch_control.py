@@ -19,7 +19,7 @@ class PitchControl():
         return np.eye(3) + omega_skew * np.sin(theta)/theta + \
             omega_skew**2 * (1-np.cos(theta)) / theta**2
 
-    def update(self, T, R_d2i, v_body):
+    def update(self, thrust_input, R_d2i, v_body):
         if v_body.item(0) == 0:
             alpha = 0
         else:
@@ -37,7 +37,7 @@ class PitchControl():
         f_body = np.array([[np.cos(alpha), -np.sin(alpha)],
                            [np.sin(alpha), np.cos(alpha)]]) @ \
                                np.array([[-F_drag], [-F_lift]])
-        T_d = T-f_body
+        T_d = thrust_input-f_body
         # print(T_d)
 
         # R_p2d = Euler2Rotation(0, np.radians(12), 0)

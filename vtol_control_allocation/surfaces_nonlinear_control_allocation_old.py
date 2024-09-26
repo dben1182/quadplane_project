@@ -1,3 +1,7 @@
+#this file implements the nonlinear control allocation
+#for the control surfaces and the forward thruster.
+
+
 from curses.ascii import ctrl
 import re
 from socket import AI_ALL
@@ -12,39 +16,42 @@ from message_types.msg_delta import MsgDelta
 from tools.rotations import Quaternion2Euler
 from message_types.msg_state import MsgState
 
-CA_ROTOR_FRONT_RIGHT = 0
-CA_ROTOR_FRONT_LEFT = 1
-CA_ROTOR_BACK_RIGHT = 2
-CA_ROTOR_BACK_LEFT = 3
-CA_ROTOR_PULLER = 4
-CA_ELEVATOR = 5
-CA_AILERON = 6
-CA_RUDDER = 7
 
-class NonlinearControlAllocation():
+CA_ROTOR_PULLER = 0
+CA_ELEVATOR = 1
+CA_AILERON = 2
+CA_RUDDER = 3
+
+
+class SurfacesNonlinearControlAllocation():
+
+    #creates the init class
     def __init__(self):
-        self.previous_solution = CA.init_actuators
-        
+        self.previous_solution = CA.init_actuators_surfaces
+
         self.max_iter = CA.max_iter
-        #creates the array creating the bounds the actuators have within the framework
+
+        #creates the actuator boundaries 
         self.actuator_bounds = [(0.0,  1.0),
-                                (0.0,  1.0),
-                                (0.0,  1.0),
-                                (0.0,  1.0),
-                                (0.0,  1.0),
                                 (-1.0, 1.0),
                                 (-1.0, 1.0),
                                 (-1.0, 1.0)]
-
-    def update(self, thrust: np.ndarray, torques: np.ndarray, state: np.ndarray, airspeed: float)-> MsgDelta:
-
+        
+    #crates the update function
+    def update(self, thrust: np.ndarray, 
+                     torques: np.ndarray,
+                     state: np.ndarray,
+                     airspeed: float)->MsgDelta:
+        
         thrust_torque_desired = np.concatenate([thrust, torques], axis=0).reshape(-1)
         v_body = state[3:6]
 
         actuator_commands = self._compute_nonlinear_optimization(thrust_torque_desired, v_body, airspeed)
 
         return self._formulate_ctrl_msg(actuator_commands)
+    
 
+    #creates the computational optimization function
     def _compute_nonlinear_optimization(self, thrust_torque_desired: np.ndarray, v_body: np.ndarray, airspeed: float)->np.ndarray:
         
         x0 = self.previous_solution
@@ -68,51 +75,71 @@ class NonlinearControlAllocation():
     def _formulate_ctrl_msg(self, actuator_commands: np.ndarray) -> MsgDelta:
         ctrl_msg = MsgDelta()
         #converts the throttle commands to part of the mssage
-        ctrl_msg.throttle_0 = actuator_commands[CA_ROTOR_FRONT_RIGHT]
-        ctrl_msg.throttle_1 = actuator_commands[CA_ROTOR_FRONT_LEFT]
-        ctrl_msg.throttle_2 = actuator_commands[CA_ROTOR_BACK_RIGHT]
-        ctrl_msg.throttle_3 = actuator_commands[CA_ROTOR_BACK_LEFT]
+        ctrl_msg.throttle_0 = 0.0
+        ctrl_msg.throttle_1 = 0.0
+        ctrl_msg.throttle_2 = 0.0
+        ctrl_msg.throttle_3 = 0.0
         ctrl_msg.throttle_4 = actuator_commands[CA_ROTOR_PULLER]
 
         ctrl_msg.elevator = actuator_commands[CA_ELEVATOR]
         ctrl_msg.aileron = actuator_commands[CA_AILERON]
         ctrl_msg.rudder = actuator_commands[CA_RUDDER]
         return ctrl_msg
+    
+    #defines the nonlinear control optimization
 
-# Possible deltas are fed into this function as x and are optimized to provide smallest 
-# difference between commanded and achieved thrusts and torques
-def nonlinear_ctrl_optimization(x: np.ndarray, 
+#Arguments:
+#1. x: array of control inputs: delta_t_forward, delta_e, delta_a, delta_r
+def nonlinear_ctrl_optimization(delta: np.ndarray, 
                                 thrust_torque_desired: np.ndarray, 
-                                v_body: np.ndarray, 
-                                airspeed: float, 
+                                v_body: np.ndarray,
+                                airspeed: float,
                                 prev_solution: np.ndarray)->tuple[float, np.ndarray]:
+    
     K_Tau = CA.K_Tau
     K_delta = CA.K_delta(airspeed)
     x_des = CA.actuators_desired
-
     # compute the thrust/torque and its derivative with respect to the change of throttle
     Va_lift = v_body.item(2)
     Va_pull = v_body.item(0)
-
-    thrust, torque, thrust_der, torque_der = rotor_thrust_torque_der(x[CA_ROTOR_FRONT_RIGHT:CA_ROTOR_PULLER + 1], 
-                                                                    [Va_lift, Va_lift, Va_lift, Va_lift, Va_pull],
-                                                                    VTOL.prop_dirs.tolist())
-
-    # Compute elevon forces
-    elevator_force_coefs = calc_elevator_force(v_body, airspeed)
-
-    thrust_torque_achieved = _calc_thrust_torque_achieved(
-        x, thrust, torque, elevator_force_coefs, airspeed, v_body)
-    thrust_torque_diff = thrust_torque_desired - thrust_torque_achieved
-    diff_norm = 0.5 * thrust_torque_diff.T @ K_Tau @ thrust_torque_diff \
-        + .5 * (x - x_des).T @ K_delta @ (x - x_des)
-
-    thrust_torque_der = calc_thrust_torque_achieved_der(
-        x, thrust, torque, thrust_der, torque_der, elevator_force_coefs, airspeed)
-    diff_norm_der = -thrust_torque_der @ K_Tau @ thrust_torque_diff \
-        + K_delta @ (x - x_des)
     
-    return diff_norm, diff_norm_der
+    #creates a vector with all of the thruster control inputs
+    delta_throttles = np.array([0.0,
+                                0.0,
+                                0.0,
+                                0.0,
+                                delta[0]])
+    thrust, torque, thrust_der, torque_der = rotor_thrust_torque_der(delta_throttles,
+                                                                     [Va_lift, Va_lift, Va_lift, Va_lift, Va_pull],
+                                                                     VTOL.prop_dirs.tolist())
+    #gets the elevator force coefficients
+    elevator_force_coefs = calc_elevator_force(v_body, airspeed)
+    #gets the actual output Thrust and Moment from the system
+    thrust_torque_achieved = _calc_thrust_torque_achieved(x=delta, 
+                                                          thrust=thrust, 
+                                                          torque=torque,
+                                                          elevator_force_coefs=elevator_force_coefs,
+                                                          airspeed = airspeed,
+                                                          v_body=v_body)
+    #gets the difference between the thrust and torque desired and the actual thrust and torque achieved
+    thrust_torque_error = thrust_torque_desired - thrust_torque_achieved
+    #gets the objective function
+    objective_function = 0.5* thrust_torque_error.T @ K_Tau @ thrust_torque_error
+    #gets the gradient vector of the objective function
+    thrust_torque_Jacobian = calc_thrust_torque_achieved_gradient(x=delta,
+                                                                  thrust=thrust,
+                                                                  torque=torque,
+                                                                  thrust_der=thrust_der,
+                                                                  torque_der=torque_der,
+                                                                  elevator_force_coef=elevator_force_coefs,
+                                                                  airspeed=airspeed)
+    
+    #gets the diff norml of the derivative
+    gradient_derivative = -thrust_torque_Jacobian @ K_Tau @ thrust_torque_error
+    #returns the objective function and its derivative
+    return objective_function, gradient_derivative
+        
+
 
 # Returns the thrust and torque achieved by certain deltas
 # x is the proposed setpoint for each of the actuators
@@ -121,7 +148,6 @@ def nonlinear_ctrl_optimization(x: np.ndarray,
 # rotors
 def _calc_thrust_torque_achieved(x, thrust, torque, elevator_force_coefs, airspeed, v_body):
 
-    #gets the scaling coefficient
     Gamma = .5 * VTOL.rho * airspeed**2 * VTOL.S_wing
 
     T_x = thrust[4] + elevator_force_coefs[0] * (x[CA_ELEVATOR])
@@ -141,53 +167,40 @@ def _calc_thrust_torque_achieved(x, thrust, torque, elevator_force_coefs, airspe
     return np.array([T_x, T_z, Tau_x, Tau_y, Tau_z]).T
 
 # Calculates the gradient of the thrust and torque achieved
-def calc_thrust_torque_achieved_der(
-    x, thrust, torque, thrust_der, torque_der, elevator_force_coef, airspeed):
+def calc_thrust_torque_achieved_gradient(x: np.ndarray, 
+                                         thrust: np.ndarray, 
+                                         torque: np.ndarray, 
+                                         thrust_der: np.ndarray, 
+                                         torque_der: np.ndarray, 
+                                         elevator_force_coef, 
+                                         airspeed):
 
     Gamma = .5 * VTOL.rho * airspeed**2 * VTOL.S_wing
 
 
-    T_x_der =  [0.,
-                0.,
-                0.,
-                0.,
-                thrust_der[4],
+    T_x_der =  [thrust_der[4],
                 elevator_force_coef[0],
                 0.,
                 0.]
-    T_z_der = [-thrust_der[0],
-                -thrust_der[1],
-                -thrust_der[2],
-                -thrust_der[3],
-                0.,
+    T_z_der =  [0.,
                 elevator_force_coef[1],
                 0.,
                 0.]
-    Tau_x_der = [-VTOL.rotor_q0.item(1) * thrust_der[0],
-                -VTOL.rotor_q1.item(1) * thrust_der[1],
-                -VTOL.rotor_q2.item(1) * thrust_der[2],
-                -VTOL.rotor_q3.item(1) * thrust_der[3],
-                torque_der[4],
+    Tau_x_der = [torque_der[4],
                 0.0,
                 Gamma * VTOL.b * VTOL.C_ell_delta_a,
                 Gamma * VTOL.b * VTOL.C_ell_delta_r]
-    Tau_y_der = [VTOL.rotor_q0.item(0) * thrust_der[0],
-                VTOL.rotor_q1.item(0) * thrust_der[1],
-                VTOL.rotor_q2.item(0) * thrust_der[2],
-                VTOL.rotor_q3.item(0) * thrust_der[3],
-                0.0,
+    Tau_y_der = [0.0,
                 Gamma * VTOL.c * VTOL.C_m_delta_e,
                 0.0,
                 0.0]
-    Tau_z_der = [torque_der[0],
-                torque_der[1],
-                torque_der[2],
-                torque_der[3],
-                0.0,
+    Tau_z_der = [0.0,
                 0.0,
                 Gamma * VTOL.b * VTOL.C_n_delta_a,
                 Gamma * VTOL.b * VTOL.C_n_delta_r]
-    return np.array([T_x_der, T_z_der, Tau_x_der, Tau_y_der, Tau_z_der]).T
+    returnArray = np.array([T_x_der, T_z_der, Tau_x_der, Tau_y_der, Tau_z_der]).T
+    
+    return returnArray
 
 def rotor_thrust_torque_der(delta, Va, dir):
     thrust = list()

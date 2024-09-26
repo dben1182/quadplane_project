@@ -15,17 +15,25 @@ class PitchFreeTrajectoryTracker():
     def update(self, state, trajectory):
         
         # position error
+        #the actual position (pn, pe, pd)
         pos_i = state[0:3,:]
+        #the commanded position (pn, pe, pd)
         pos_r = trajectory[0:3,0].reshape((3,1))
+        #position error (pn, pe, pd)
         pos_err = pos_i - pos_r
 
         # velocity error
+        #actual body frame velocity (u, v, w)
         vel_i = state[3:6,:]
+        #desired body frame velocity (u, v, w)
         vel_r = trajectory[0:3,1].reshape((3,1))
+        #error body frame velocity (u, v, w)
         vel_err = vel_i - vel_r
 
         # heading error
+        #gets the desired psi trajectory
         psi_r = trajectory[3,0]
+        #
         x_di = np.array([[np.cos(psi_r), np.sin(psi_r), 0]]).T
 
         # desired force vector computation

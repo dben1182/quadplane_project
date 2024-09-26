@@ -296,7 +296,7 @@ class VTOLDynamics:
         else:
             self._beta = np.arcsin(vr / np.sqrt(ur**2+vr**2+wr**2))
 
-    def _forces_moments(self, delta):
+    def _forces_moments(self, delta: MsgDelta):
         """
         return the forces on the UAV based on the state, wind, and control surfaces
         :param delta: np.matrix(delta_a, delta_e, delta_r, delta_t)
@@ -352,6 +352,9 @@ class VTOLDynamics:
             + VTOL.C_Y_delta_a*delta.aileron + VTOL.C_Y_delta_r*delta.rudder) \
             + f_g.item(1)
 
+
+        #gets the Moments produced by the Rotors, both the lever arm moments caused by thrust
+        #and the aerodynamic moments caused by the propellors, and sums them all together.
         My_rotors = (thrust_prop[0]*VTOL.rotor_q0.item(0) + thrust_prop[1]*VTOL.rotor_q1.item(0)
             + thrust_prop[2]*VTOL.rotor_q2.item(0) + thrust_prop[3]*VTOL.rotor_q3.item(0))
         Mx_rotors = -(thrust_prop[0]*VTOL.rotor_q0.item(1) + thrust_prop[1]*VTOL.rotor_q1.item(1)

@@ -17,7 +17,7 @@ from vtol_dynamics.vtol_dynamics import VTOLDynamics
 from chap4.wind_simulation import WindSimulation
 from message_types.msg_delta import MsgDelta
 from message_types.msg_state import MsgState
-from vtol_control_allocation.surfaces_nonlinear_control_allocation import SurfacesNonlinearControlAllocation
+from vtol_control_allocation.surfaces_nonlinear_control_allocation_old import SurfacesNonlinearControlAllocation
 from low_level_controller.rate_control import RateControl
 from pitch_free_trajectory_tracker import PitchFreeTrajectoryTracker
 from pitch_control import PitchControl
@@ -39,7 +39,7 @@ def main():
     vtol = VTOLDynamics(SIM.ts_simulation)
 
     # INITIALIZE TRAJECTORIES
-    traj = TRAJ.tcl
+    traj = TRAJ.tcl_fast
     
     ## ---------------------------------
 

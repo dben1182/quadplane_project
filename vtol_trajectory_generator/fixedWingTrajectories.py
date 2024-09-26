@@ -11,5 +11,5 @@ from vtol_trajectory_generator.trajectory_generator import LineSegment, Trajecto
 tcl_fast = TrajectoryGenerator()
 tcl_fast.add_line_segment(LineSegment(start_pos=np.array([[0.0, 0.0, 0.0]]).T,
                                       start_vel=10.0,
-                                      end_pos=np.array([[500.0, 0.0, 0.0]]),
+                                      end_pos=np.array([[500.0, 0.0, 0.0]]).T,
                                       end_vel=10.0))

@@ -81,15 +81,21 @@ def main():
         traj_derivatives_at_t = traj.traj_msg(sim_time)
 
         #------- High Level controller-------------
+        #from the trajectory tracker, based on our estimated state, we get a Thrust desired (Fx, Fz)
+        #and 
         T, R_d = traj_tracker.update(estimated_state, traj_derivatives_at_t)
         T, R_d = pitch_ctrl.update(T, R_d, estimated_state[3:6])
         T = T.reshape(-1)
+        #gets the commanded roll rates vector, based on the rotation matrix
         omega_c = att_ctrl.update(Quaternion2Rotation(estimated_state[6:10]), R_d)
         omega_c = omega_c.reshape(-1)
 
         #------- Low Level Controller -------------
+        #gets the actual roll rates vector
         omega = estimated_state[10:13,0]
+        #gets the commanded tau based on the commanded and actual roll rates
         tau_c = rate_control.update(omega_c, omega)
+        #gets the delta commands from the control allocation
         delta = control_alloc.update(T, tau_c, estimated_state, vtol._Va)
         ctrl_end_time = time.time()
 
