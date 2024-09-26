@@ -22,9 +22,14 @@ from attitude_control import AttitudeControl
 from tools.msg_convert import *
 from tools.rotations import Quaternion2Euler, Rotation2Quaternion, Rotation2Euler, Quaternion2Rotation
 
+#imports the positional tracker
+from tools.performanceMeasures import performanceMeasures
+
+
 # trajectories
 import vtol_trajectory_generator.trajectories as TRAJ
 
+import pandas as pd
 
 def main():
     np.set_printoptions(precision=4, linewidth=200, suppress=True)
@@ -56,6 +61,10 @@ def main():
     rate_control = RateControl(ts_control=SIM.ts_control)
     control_alloc = NonlinearControlAllocation()
 
+
+    #creates instance of the performance measures class
+    performance = performanceMeasures(Ts=SIM.ts_simulation)
+
     # initialize command message
     delta = MsgDelta()
 
@@ -79,6 +88,16 @@ def main():
         ctrl_start_time = time.time()
         # ------ Trajectory follower
         traj_derivatives_at_t = traj.traj_msg(sim_time)
+
+        #gets the positional errors
+        actualPosition = estimated_state[0:3,:]
+        #commanded position
+        commandedPosition = traj_derivatives_at_t[0:3,0].reshape((3,1))
+        #throws those into the metric equations
+        performance.posErrorTracker.update(desiredPosition=commandedPosition,
+                                           actualPosition=actualPosition)
+        
+
 
         #------- High Level controller-------------
         #from the trajectory tracker, based on our estimated state, we get a Thrust desired (Fx, Fz)
@@ -119,6 +138,20 @@ def main():
 
         #-------increment time-------------
         sim_time += Ts
+
+    #gets the error information
+    errorPosition1Norm = performance.posErrorTracker.getErrorPositionNorms(degree=1)
+    errorPosition2Norm = performance.posErrorTracker.getErrorPositionNorms(degree=2)
+
+
+    #writes the various forms of information to csv files
+    errorPosition1Norm_df = pd.DataFrame(errorPosition1Norm)
+    errorPosition1Norm_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/MasonTrajectoryTracking/norm1.csv', index=False, header=False)
+
+    errorPosition2Norm_df = pd.DataFrame(errorPosition2Norm)
+    errorPosition2Norm_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/MasonTrajectoryTracking/norm2.csv', index=False, header=False)
+
+    
 
     print("Done with simulation")
     while (True):

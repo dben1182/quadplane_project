@@ -103,6 +103,7 @@ def nonlinear_ctrl_optimization(x: np.ndarray,
 
     thrust_torque_achieved = _calc_thrust_torque_achieved(
         x, thrust, torque, elevator_force_coefs, airspeed, v_body)
+    
     thrust_torque_diff = thrust_torque_desired - thrust_torque_achieved
     diff_norm = 0.5 * thrust_torque_diff.T @ K_Tau @ thrust_torque_diff \
         + .5 * (x - x_des).T @ K_delta @ (x - x_des)

@@ -145,7 +145,8 @@ class SurfacesNonlinearControlAllocation():
     #Possible deltas are fed into this function by the minimizer and then selected to have the 
     #smallest value for the objective function
     #this function is the objective function
-    def nonlinear_control_optimization(delta_array: np.ndarray,
+    def nonlinear_control_optimization(self,
+                                       delta_array: np.ndarray,
                                        wrench_desired: np.ndarray,
                                        v_body: np.ndarray,
                                        airspeed: float,
@@ -179,12 +180,25 @@ class SurfacesNonlinearControlAllocation():
 
 
         #calculates the thrust and torque actually achieved
-        wrench_achieved = calculate_wrench_achieved(delta_array=delta_array,
-                                                    motor_thrusts=motor_thrusts,
-                                                    motor_moments=motor_moments,
-                                                    elevator_force_coefficients=elevator_force_coefficients,
-                                                    airspeed=airspeed,
-                                                    v_body=v_body)
+        wrench_achieved = self.calculate_wrench_achieved(delta_array=delta_array,
+                                                         motor_thrusts=motor_thrusts,
+                                                         motor_moments=motor_moments,
+                                                         elevator_force_coefficients=elevator_force_coefficients,
+                                                         airspeed=airspeed,
+                                                         v_body=v_body)
+        
+        #calculates wrench error
+        wrenchError = wrench_desired - wrench_achieved
+
+
+        ##################TODO##############################################################
+        #What I need to figure out is whether we are going to include the deltas in the calculations
+        #and whether we are going to 
+
+        #calculates the 2 norm for the objective function
+        objective_norm = 0.5 * 
+        
+        
 
 
     #function that calculates the thrust and torque achieved
@@ -316,7 +330,7 @@ class SurfacesNonlinearControlAllocation():
         else:
             self.alpha = np.arctan(w_air/u_air)
         # compute sideslip angle
-        if self._Va == 0:
+        if self.Va == 0:
             self.beta = np.inf
         else:
             self.beta = np.arcsin(v_air / np.sqrt(u_air**2+v_air**2+w_air**2))
