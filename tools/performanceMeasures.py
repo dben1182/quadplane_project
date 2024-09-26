@@ -23,7 +23,8 @@ class performanceMeasures:
         self.posErrorTracker = positionErrorTracker(Ts=Ts)
 
 
-
+#class that tracks the position, the error, various norms, and the 
+#total integral of the distance error
 class positionErrorTracker:
 
     def __init__(self, Ts: float):
@@ -78,7 +79,7 @@ class positionErrorTracker:
 
 
     #gets the position norms
-    def getErrorPositionNorms(self, degree: float = 2):
+    def getErrorPositionNorms(self, degree: int = 2):
         #case degree is 1
         if degree == 1:
             return self.errorPosition1Norm
@@ -86,6 +87,13 @@ class positionErrorTracker:
             return self.errorPosition2Norm
         else:
             return self.errorPosition2Norm
+
+    #gets the integral norms
+    def getErrorIntegralNorms(self, degree: int=2):
+        if degree == 1:
+            return self.errorPosition1Norm_Integral
+        else:
+            return self.errorPosition2Norm_Integral
 
     #defines functions to get the various 
 
@@ -105,6 +113,19 @@ class positionErrorTracker:
         self.errorPosition1Norm_Integral = 0.0
         self.errorPosition2Norm_Integral = 0.0
 
+
+#class that tracks the instantaneous power to the motors and records it
+#and takes the integral to get total energy expenditure.
+class energyTracker:
+
+    def __init__(self, Ts: float):
+        self.Ts = Ts
+
+        #creates a vector to store the V_in, I_in, and P_in vectors
+        self.Voltage_Array = np.ndarray((5,0))
+        self.Current_Array = np.ndarray((5,0))
+        self.Power_Array = np.ndarray((5,0))
+        
 
 
 

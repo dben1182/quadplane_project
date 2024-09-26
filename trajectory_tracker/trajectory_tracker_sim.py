@@ -61,6 +61,9 @@ def main():
     rate_control = RateControl(ts_control=SIM.ts_control)
     control_alloc = NonlinearControlAllocation()
 
+    #gets the motor electrical vectors
+    V_in, I_in, P_in = vtol.getMotorElectricals()
+
 
     #creates instance of the performance measures class
     performance = performanceMeasures(Ts=SIM.ts_simulation)
@@ -143,6 +146,9 @@ def main():
     errorPosition1Norm = performance.posErrorTracker.getErrorPositionNorms(degree=1)
     errorPosition2Norm = performance.posErrorTracker.getErrorPositionNorms(degree=2)
 
+    errorPosition1NormIntegral = performance.posErrorTracker.getErrorIntegralNorms(degree=1)
+    errorPosition2NormIntegral = performance.posErrorTracker.getErrorIntegralNorms(degree=2)
+    
 
     #writes the various forms of information to csv files
     errorPosition1Norm_df = pd.DataFrame(errorPosition1Norm)
@@ -151,7 +157,12 @@ def main():
     errorPosition2Norm_df = pd.DataFrame(errorPosition2Norm)
     errorPosition2Norm_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/MasonTrajectoryTracking/norm2.csv', index=False, header=False)
 
-    
+    #writes the integrals outpu
+    errorPosition1NormIntegral_df = pd.DataFrame(np.array([[errorPosition1NormIntegral]]))
+    errorPosition1NormIntegral_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/MasonTrajectoryTracking/norm1_integral.csv', index=False, header=False)
+
+    errorPosition2NormIntegral_df = pd.DataFrame(np.array([[errorPosition2NormIntegral]]))
+    errorPosition2NormIntegral_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/MasonTrajectoryTracking/norm2_integral.csv', index=False, header=False)
 
     print("Done with simulation")
     while (True):

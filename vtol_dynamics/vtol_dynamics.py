@@ -94,6 +94,15 @@ class VTOLDynamics:
         self._Va = VTOL.u0
         self._alpha = 0
         self._beta = 0
+
+        #variables to store current electrical information
+        #stores the present voltage input into each motor
+        self.V_in_motors = np.ndarray((5,1))
+        #store the present current input into each motor
+        self.I_in_motors = np.ndarray((5,1))
+        #stores the power
+        self.P_in_motors = np.ndarray((5,1))
+
         # initialize true_state message
         self.true_state = MsgState()
         # initialize the sensors message
@@ -336,6 +345,13 @@ class VTOLDynamics:
         throttles = delta.throttles
         thrust_prop, torque_prop = self._motor_thrust_torque(prop_airspeeds, throttles, VTOL.prop_dirs)
 
+        #gets the arrays for the motor voltage, current and power instantaneously
+        V_in_motors, I_in_motors, P_in_motors = self._motor_current_voltage(Va=prop_airspeeds, delta_t=throttles)
+
+        #saves each of the data points
+        self.V_in_motors = V_in_motors
+        self.I_in_motors = I_in_motors
+        self.P_in_motors = P_in_motors
 
         # compute longitudinal forces in body frame
         f_body = np.array([[np.cos(self._alpha), -np.sin(self._alpha)],
@@ -386,7 +402,7 @@ class VTOLDynamics:
         self._forces[2] = fz
         return np.array([[fx, fy, fz, Mx, My, Mz]]).T
 
-    def _motor_thrust_torque(self, Va, delta_t, direction):
+    def _motor_thrust_torque(self, Va: np.ndarray, delta_t: np.ndarray, direction: np.ndarray):
         # compute thrust and torque due to propeller
         # map delta_t throttle command(0 to 1) into motor input voltage
         V_in = VTOL.V_max*delta_t
@@ -405,6 +421,40 @@ class VTOLDynamics:
             + VTOL.rho*(VTOL.D_prop**4)*VTOL.C_Q1*Va / (2*np.pi) * Omega_p \
             + VTOL.rho*(VTOL.D_prop**3)*VTOL.C_Q2*(Va**2))
         return thrust_prop, torque_prop
+    
+    def _motor_current_voltage(self, Va: np.ndarray, delta_t: np.ndarray)->tuple[np.ndarray, np.ndarray, np.ndarray]:
+        # compute thrust and torque due to propeller
+        # map delta_t throttle command(0 to 1) into motor input voltage
+        V_in = VTOL.V_max*delta_t
+
+        # Angular speed of propeller
+        a = VTOL.rho*(VTOL.D_prop**5) / ((2*np.pi)**2) * VTOL.C_Q0
+        b = (VTOL.rho*(VTOL.D_prop**4) / (2*np.pi) * VTOL.C_Q1*Va) + (VTOL.KQ**2/VTOL.R_motor)
+        c = VTOL.rho*(VTOL.D_prop**3)*VTOL.C_Q2*(Va**2) - (VTOL.KQ/VTOL.R_motor)*V_in + VTOL.KQ*VTOL.i0
+        Omega_p = (-b + np.sqrt(b**2 - 4*a*c)) / (2*a)
+
+        #gets the KQ of the motor
+        KQ = VTOL.KQ
+
+        #gets the resistance of the motor
+        R_motor = VTOL.R_motor
+
+        #calculates the Back EMF
+        Back_EMF = Omega_p*KQ
+
+        #calculates the Current into the motor
+        I_in = (V_in - Back_EMF)/R_motor
+
+        #sets the power
+        P_in = np.transpose(V_in) @ I_in
+
+        #returns all three
+        return V_in, I_in, P_in
+    
+    #function that gets the current motor current and voltage
+    def getMotorElectricals(self):
+        return self.V_in_motors, self.I_in_motors, self.P_in_motors
+
 
     def _update_true_state(self):
         # update the class structure for the true state:
