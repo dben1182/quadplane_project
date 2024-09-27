@@ -19,6 +19,4 @@ plot(Norm2Vector);
 title("2 Norm Vector");
 
 figure(3);
-plot(normPower);
-title("Power Norm");
-
+plot()

@@ -91,9 +91,10 @@ class SurfacesNonlinearControlAllocation():
         wrench_desired = np.concatenate([thrust, torques], axis=0).reshape(-1)
         v_body = state[3:6]
 
-        actuator_commands = self._compute_nonlinear_optimization(wrench_desired, v_body, airspeed)
+        #computes the nonlinear optimization command
+        actuator_commands = self.compute_nonlinear_optimization(wrench_desired, v_body, airspeed)
 
-        return self._formulate_ctrl_msg(actuator_commands)
+        return self.formulate_control_message(actuator_commands)
     
 
     #creates the computational nonlinear 
@@ -106,7 +107,7 @@ class SurfacesNonlinearControlAllocation():
         delta_0 = self.previous_solution
 
         #gets the whole result
-        delta_result = minimize(nonlinear_control_optimization,
+        delta_result = minimize(self.nonlinear_control_optimization,
                                 delta_0,
                                 args=(wrench_desired, v_body, airspeed, delta_0),
                                 bounds= self.actuator_bounds,
@@ -187,18 +188,28 @@ class SurfacesNonlinearControlAllocation():
                                                          airspeed=airspeed,
                                                          v_body=v_body)
         
+        #reshapes the wrench desired so we get the right size
+        wrench_desired = np.reshape(wrench_desired, (5,1))
         #calculates wrench error
         wrenchError = wrench_desired - wrench_achieved
-
-
-        ##################TODO##############################################################
-        #What I need to figure out is whether we are going to include the deltas in the calculations
-        #and whether we are going to 
-
         #calculates the 2 norm for the objective function
-        objective_norm = 0.5 * 
+        objective_norm = 0.5 * wrenchError.T @ K_Tau @ wrenchError
         
         
+        #gets the wrench Jacobian with respect to the deltas
+        wrench_Jacobian = calc_thrust_torque_achieved_der(delta=delta_array, 
+                                                          motor_thrusts=motor_thrusts,
+                                                          motor_torques=motor_moments,
+                                                          thrust_der=motor_thrust_derivatives,
+                                                          torque_der=motor_moment_derivatives,
+                                                          elevator_force_coef=elevator_force_coefficients,
+                                                          airspeed=self.Va)
+        
+        #gets the gradient of the objective function
+        objective_gradient = -wrench_Jacobian @ K_Tau @ wrenchError
+
+        #returns the objective norm, and the Objective gradient
+        return objective_norm, objective_gradient
 
 
     #function that calculates the thrust and torque achieved
@@ -245,14 +256,14 @@ class SurfacesNonlinearControlAllocation():
 
 
         # compute Lift and Drag Forces
-        Gamma_Va = (1/2)*VTOL.rho*(self._Va**2)*VTOL.S_wing
+        Gamma_Va = (1/2)*VTOL.rho*(self.Va**2)*VTOL.S_wing
         
-        F_lift = (1/2)*VTOL.rho*(self._Va**2)*VTOL.S_wing*(CL + VTOL.C_L_q*VTOL.c/(2*self._Va)*q \
+        F_lift = (1/2)*VTOL.rho*(self.Va**2)*VTOL.S_wing*(CL + VTOL.C_L_q*VTOL.c/(2*self.Va)*q \
             + VTOL.C_L_delta_e*delta_elevator)
         
 
-        F_drag = (1/2)*VTOL.rho*(self._Va**2)*VTOL.S_wing*\
-            (CD + VTOL.C_D_q*VTOL.c/(2*self._Va)*q + VTOL.C_D_delta_e*delta_elevator)
+        F_drag = (1/2)*VTOL.rho*(self.Va**2)*VTOL.S_wing*\
+            (CD + VTOL.C_D_q*VTOL.c/(2*self.Va)*q + VTOL.C_D_delta_e*delta_elevator)
 
 
 
@@ -262,40 +273,38 @@ class SurfacesNonlinearControlAllocation():
                            [np.sin(self.alpha), np.cos(self.alpha)]]) @ \
                                np.array([[-F_drag], [-F_lift]])
         fx = f_body.item(0) + f_g.item(0) + motor_thrusts[4]
-        fz = f_body.item(1) + f_g.item(2) - \
-            (motor_thrusts[0] + motor_thrusts[1] + motor_thrusts[2] + motor_thrusts[3])
+        fz = f_body.item(1) + f_g.item(2)
 
 
 
         #gets the Moments produced by the Rotors, both the lever arm moments caused by thrust
-        #and the aerodynamic moments caused by the propellors, and sums them all together.
-        My_rotors = (motor_thrusts[0]*VTOL.rotor_q0.item(0) + motor_thrusts[1]*VTOL.rotor_q1.item(0)
-            + motor_thrusts[2]*VTOL.rotor_q2.item(0) + motor_thrusts[3]*VTOL.rotor_q3.item(0))
+        #and the aerodynamic moments caused by the propellors, and sums them all together
         
-        Mx_rotors = -(motor_thrusts[0]*VTOL.rotor_q0.item(1) + motor_thrusts[1]*VTOL.rotor_q1.item(1)
-            + motor_thrusts[2]*VTOL.rotor_q2.item(1) + motor_thrusts[3]*VTOL.rotor_q3.item(1)
-            + motor_moments[4])
+        Mx_rotors = -(motor_moments[4])
         
         Mz_rotors = motor_moments[0] + motor_moments[1] + motor_moments[2] + motor_moments[3]
 
         # compute logitudinal torque in body frame
-        My = (1/2)*VTOL.rho*(self._Va**2)*VTOL.S_wing*VTOL.c * \
-            (VTOL.C_m_0 + VTOL.C_m_alpha*self.alpha + VTOL.C_m_q*VTOL.c/(2*self._Va)*q \
+        # for the aerodynamic portions
+        My = (1/2)*VTOL.rho*(self.Va**2)*VTOL.S_wing*VTOL.c * \
+            (VTOL.C_m_0 + VTOL.C_m_alpha*self.alpha + VTOL.C_m_q*VTOL.c/(2*self.Va)*q \
             + VTOL.C_m_delta_e*delta_elevator)
 
         # compute lateral torques in body frame
-        Mx = (1/2)*VTOL.rho*(self._Va**2)*VTOL.S_wing*VTOL.b * \
+        #for the aerodynamic portions
+        Mx = (1/2)*VTOL.rho*(self.Va**2)*VTOL.S_wing*VTOL.b * \
             (VTOL.C_ell_0 + VTOL.C_ell_beta*self.beta \
-            + VTOL.C_ell_p*VTOL.b/(2*self._Va)*p + VTOL.C_ell_r*VTOL.b/(2*self._Va)*r \
+            + VTOL.C_ell_p*VTOL.b/(2*self.Va)*p + VTOL.C_ell_r*VTOL.b/(2*self.Va)*r \
             + VTOL.C_ell_delta_a*delta_aileron + VTOL.C_ell_delta_r*delta_rudder)
         
-        Mz = (.5)*VTOL.rho*(self._Va**2)*VTOL.S_wing*VTOL.b * \
+        #for the aerodynamic portions
+        Mz = (.5)*VTOL.rho*(self.Va**2)*VTOL.S_wing*VTOL.b * \
             (VTOL.C_n_0 + VTOL.C_n_beta*self.beta \
-            + VTOL.C_n_p*VTOL.b/(2*self._Va)*p + VTOL.C_n_r*VTOL.b/(2*self._Va)*r \
+            + VTOL.C_n_p*VTOL.b/(2*self.Va)*p + VTOL.C_n_r*VTOL.b/(2*self.Va)*r \
             + VTOL.C_n_delta_a*delta_aileron + VTOL.C_n_delta_r*delta_rudder)
         
+        #adds the 
         Mx += Mx_rotors
-        My += My_rotors
         Mz += Mz_rotors
 
         return np.array([[fx, fz, Mx, My, Mz]]).T
@@ -309,7 +318,7 @@ class SurfacesNonlinearControlAllocation():
         wind_gust = wind[3:6]
 
         # convert wind vector from world to body frame
-        wind_body_frame = Quaternion2Rotation(self._state[6:10,:]) @ wind_steady_state + wind_gust
+        wind_body_frame = Quaternion2Rotation(self.state[6:10,:]) @ wind_steady_state + wind_gust
 
         #velocity vector relative to the airmass
         v_ground = self.state[3:6]
@@ -338,54 +347,43 @@ class SurfacesNonlinearControlAllocation():
 
 
 # Calculates the gradient of the thrust and torque achieved
-def calc_thrust_torque_achieved_der(
-    x, thrust, torque, thrust_der, torque_der, elevator_force_coef, airspeed):
+def calc_thrust_torque_achieved_der(delta: np.ndarray, 
+                                    motor_thrusts: np.ndarray, 
+                                    motor_torques: np.ndarray, 
+                                    thrust_der: np.ndarray, 
+                                    torque_der: np.ndarray, 
+                                    elevator_force_coef: np.ndarray, 
+                                    airspeed: float):
 
+    #gets the scaling factor for the coefficients
     Gamma = .5 * VTOL.rho * airspeed**2 * VTOL.S_wing
 
-
-    T_x_der =  [0.,
-                0.,
-                0.,
-                0.,
-                thrust_der[4],
+    #Gradient of T_x
+    T_x_der =  [thrust_der[4],
                 elevator_force_coef[0],
                 0.,
                 0.]
-    T_z_der = [-thrust_der[0],
-                -thrust_der[1],
-                -thrust_der[2],
-                -thrust_der[3],
-                0.,
+    #Gradient of T_z
+    T_z_der =  [0.,
                 elevator_force_coef[1],
                 0.,
                 0.]
-    Tau_x_der = [-VTOL.rotor_q0.item(1) * thrust_der[0],
-                -VTOL.rotor_q1.item(1) * thrust_der[1],
-                -VTOL.rotor_q2.item(1) * thrust_der[2],
-                -VTOL.rotor_q3.item(1) * thrust_der[3],
-                torque_der[4],
+    #Gradient of Tau_x
+    Tau_x_der = [torque_der[4],
                 0.0,
                 Gamma * VTOL.b * VTOL.C_ell_delta_a,
                 Gamma * VTOL.b * VTOL.C_ell_delta_r]
-    Tau_y_der = [VTOL.rotor_q0.item(0) * thrust_der[0],
-                VTOL.rotor_q1.item(0) * thrust_der[1],
-                VTOL.rotor_q2.item(0) * thrust_der[2],
-                VTOL.rotor_q3.item(0) * thrust_der[3],
-                0.0,
+    #Gradient of Tau_y
+    Tau_y_der = [0.0,
                 Gamma * VTOL.c * VTOL.C_m_delta_e,
                 0.0,
                 0.0]
-    Tau_z_der = [torque_der[0],
-                torque_der[1],
-                torque_der[2],
-                torque_der[3],
-                0.0,
+    #Gradient of Tau_z
+    Tau_z_der = [0.0,
                 0.0,
                 Gamma * VTOL.b * VTOL.C_n_delta_a,
                 Gamma * VTOL.b * VTOL.C_n_delta_r]
     return np.array([T_x_der, T_z_der, Tau_x_der, Tau_y_der, Tau_z_der]).T
-
 
 
 
@@ -402,9 +400,6 @@ def calculate_elevator_force_coef(v_body, airspeed):
     elevator_force_coefs = [-np.cos(alpha) * elevator_drag_coef + np.sin(alpha) * elevator_lift_coef,
                           -np.sin(alpha) * elevator_drag_coef - np.cos(alpha) * elevator_lift_coef]
     return elevator_force_coefs
-
-
-
 
 
 

@@ -1,3 +1,6 @@
+#Now we are attempting the thing that we've been after all of this time.
+
+
 from curses.ascii import ctrl
 import re
 from socket import AI_ALL
@@ -21,7 +24,9 @@ CA_ELEVATOR = 5
 CA_AILERON = 6
 CA_RUDDER = 7
 
+
 class NonlinearControlAllocation():
+
     def __init__(self):
         self.previous_solution = CA.init_actuators
         
@@ -35,7 +40,7 @@ class NonlinearControlAllocation():
                                 (-1.0, 1.0),
                                 (-1.0, 1.0),
                                 (-1.0, 1.0)]
-
+        
     def update(self, thrust: np.ndarray, torques: np.ndarray, state: np.ndarray, airspeed: float)-> MsgDelta:
 
         thrust_torque_desired = np.concatenate([thrust, torques], axis=0).reshape(-1)
@@ -106,8 +111,9 @@ def nonlinear_ctrl_optimization(x: np.ndarray,
     
     thrust_torque_diff = thrust_torque_desired - thrust_torque_achieved
     diff_norm = 0.5 * thrust_torque_diff.T @ K_Tau @ thrust_torque_diff \
-        + .5 * (x - x_des).T @ K_delta @ (x - x_des)
+        + .5 * (x - x_des).T @ K_delta @ (x - x_des) #It turns out that this line is not really necessary
 
+    #gets the wrench of the Jacobian
     thrust_torque_der = calc_thrust_torque_achieved_der(
         x, thrust, torque, thrust_der, torque_der, elevator_force_coefs, airspeed)
     diff_norm_der = -thrust_torque_der @ K_Tau @ thrust_torque_diff \
@@ -274,3 +280,4 @@ def calc_thrust_torque_achieved(x, v_body, airspeed):
     elevator_force_coefs = calc_elevator_force(v_body, airspeed)
 
     return _calc_thrust_torque_achieved(x, thrust, torque, elevator_force_coefs, airspeed, v_body)
+

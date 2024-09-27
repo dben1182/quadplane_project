@@ -1,9 +1,11 @@
+#this file runs a simulation using Mason's code that attempts to drive deltas to zero
+
 #/usr/bin/python3
 
 import os, sys
 # insert parent directory at beginning of python search path
 from pathlib import Path
-sys.path.insert(0,os.fspath(Path(__file__).parents[1]))
+sys.path.insert(0,os.fspath(Path(__file__).parents[3]))
 import numpy as np
 import time
 import parameters.simulation_parameters as SIM
@@ -16,9 +18,9 @@ from message_types.msg_delta import MsgDelta
 from message_types.msg_state import MsgState
 from vtol_control_allocation.simultaneousControl.nonlinear_control_allocation_zeroDelta import NonlinearControlAllocation
 from low_level_controller.rate_control import RateControl
-from pitch_free_trajectory_tracker import PitchFreeTrajectoryTracker
-from pitch_control import PitchControl
-from attitude_control import AttitudeControl
+from trajectory_tracker.pitch_free_trajectory_tracker import PitchFreeTrajectoryTracker
+from trajectory_tracker.pitch_control import PitchControl
+from trajectory_tracker.attitude_control import AttitudeControl
 from tools.msg_convert import *
 from tools.rotations import Quaternion2Euler, Rotation2Quaternion, Rotation2Euler, Quaternion2Rotation
 
@@ -154,6 +156,35 @@ def main():
     errorPosition1NormIntegral = performance.posErrorTracker.getErrorIntegralNorms(degree=1)
     errorPosition2NormIntegral = performance.posErrorTracker.getErrorIntegralNorms(degree=2)
     
+
+    #writes the various forms of information to csv files
+    errorPosition1Norm_df = pd.DataFrame(errorPosition1Norm)
+    errorPosition1Norm_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/zeroDeltaComparison/zeroDelta/norm1.csv', index=False, header=False)
+
+    errorPosition2Norm_df = pd.DataFrame(errorPosition2Norm)
+    errorPosition2Norm_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/zeroDeltaComparison/zeroDelta/norm2.csv', index=False, header=False)
+
+    #writes the integrals outpu
+    errorPosition1NormIntegral_df = pd.DataFrame(np.array([[errorPosition1NormIntegral]]))
+    errorPosition1NormIntegral_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/zeroDeltaComparison/zeroDelta/norm1_integral.csv', index=False, header=False)
+
+    errorPosition2NormIntegral_df = pd.DataFrame(np.array([[errorPosition2NormIntegral]]))
+    errorPosition2NormIntegral_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/zeroDeltaComparison/zeroDelta/norm2_integral.csv', index=False, header=False)
+
+    #gets the complete power array
+    completePower = performance.energyTracker.getCompletePower()
+    normPower = performance.energyTracker.getNormPower()
+    totalEnergy = performance.energyTracker.getTotalEnergy()
+
+    completePower_df = pd.DataFrame(completePower)
+    completePower_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/zeroDeltaComparison/zeroDelta/completePower.csv', index=False, header=False)
+
+    normPower_df = pd.DataFrame(normPower)
+    normPower_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/zeroDeltaComparison/zeroDelta/normPower.csv', index=False, header=False)
+
+
+    totalEnergy_df = pd.DataFrame(totalEnergy)
+    totalEnergy_df.to_csv('/home/dben1182/Documents/quadplane_project_modified/data/tracking/zeroDeltaComparison/zeroDelta/totalEnergy.csv', index=False, header=False)
 
 
 

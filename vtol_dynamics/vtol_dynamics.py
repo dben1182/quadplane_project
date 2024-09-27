@@ -446,7 +446,7 @@ class VTOLDynamics:
         I_in = (V_in - Back_EMF)/R_motor
 
         #sets the power
-        P_in = np.transpose(V_in) @ I_in
+        P_in = np.diag(V_in) @ I_in
 
         #returns all three
         return V_in, I_in, P_in

@@ -46,8 +46,10 @@ class SurfacesNonlinearControlAllocation():
         thrust_torque_desired = np.concatenate([thrust, torques], axis=0).reshape(-1)
         v_body = state[3:6]
 
+        #gets the actuator commands, based on input of desired wrench and the state
         actuator_commands = self._compute_nonlinear_optimization(thrust_torque_desired, v_body, airspeed)
-
+        
+        #returns the actuator commands from an array to a MsgDelta class
         return self._formulate_ctrl_msg(actuator_commands)
     
 

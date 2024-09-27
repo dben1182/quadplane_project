@@ -89,6 +89,8 @@ tc_slow.add_line_segment(LineSegment(
 #     end_pos=np.array([[800, 0, 0]]).T, 
 #     end_vel=0))
 
+
+
 tcl = TrajectoryGenerator()
 tcl.add_line_segment(LineSegment(
     start_pos=np.array([[0, 0, 0]]).T, 
@@ -116,7 +118,48 @@ tcl.add_line_segment(LineSegment(
     end_pos=np.array([[400, 0, 0]]).T, 
     end_vel=0))
 
+#sets the incremental x distance
+x_incremental = 50
+x_current = 0
 
+max_v = 10
+#gets a simplified trajectory
+tcl_simplified = TrajectoryGenerator()
+tcl_simplified.add_line_segment(LineSegment(
+    start_pos=np.array([[x_current, 0, 0]]).T, 
+    start_vel=0, 
+    end_pos=np.array([[x_current+x_incremental, 0, 0]]).T, 
+    end_vel=5))
+x_current += x_incremental
+tcl_simplified.add_line_segment(LineSegment(
+    start_pos=np.array([[x_current, 0, 0]]).T, 
+    start_vel=10, 
+    end_pos=np.array([[x_current+x_incremental, 0, 0]]).T, 
+    end_vel=max_v))
+x_current += x_incremental
+tcl_simplified.add_line_segment(LineSegment(
+    start_pos=np.array([[x_current, 0, 0]]).T, 
+    start_vel=max_v, 
+    end_pos=np.array([[x_current+x_incremental, 0, 0]]).T, 
+    end_vel=max_v))
+x_current += x_incremental
+tcl_simplified.add_line_segment(LineSegment(
+    start_pos=np.array([[x_current, 0, 0]]).T, 
+    start_vel=max_v, 
+    end_pos=np.array([[x_current+x_incremental, 0, 0]]).T, 
+    end_vel=10))
+x_current += x_incremental
+tcl_simplified.add_line_segment(LineSegment(
+    start_pos=np.array([[x_current, 0, 0]]).T, 
+    start_vel=10, 
+    end_pos=np.array([[x_current+x_incremental, 0, 0]]).T, 
+    end_vel=5))
+x_current += x_incremental
+tcl_simplified.add_line_segment(LineSegment(
+    start_pos=np.array([[x_current, 0, 0]]).T, 
+    start_vel=5, 
+    end_pos=np.array([[x_current+x_incremental, 0, 0]]).T, 
+    end_vel=0))
 
 # ls = LineSegment(
 #     start_pos=np.array([[100, 0, -20]]).T, 
