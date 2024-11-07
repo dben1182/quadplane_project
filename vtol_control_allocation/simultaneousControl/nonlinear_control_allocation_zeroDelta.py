@@ -154,22 +154,22 @@ def calc_thrust_torque_achieved_der(
     Gamma = .5 * VTOL.rho * airspeed**2 * VTOL.S_wing
 
 
-    T_x_der =  [0.,
-                0.,
-                0.,
-                0.,
-                thrust_der[4],
-                elevator_force_coef[0],
-                0.,
-                0.]
-    T_z_der = [-thrust_der[0],
-                -thrust_der[1],
-                -thrust_der[2],
-                -thrust_der[3],
-                0.,
-                elevator_force_coef[1],
-                0.,
-                0.]
+    T_x_der =  [0.,#delta t v1
+                0.,#delta t v2
+                0.,#delta t v3
+                0.,#delta t v4
+                thrust_der[4],#delta t forward
+                elevator_force_coef[0],#delta e
+                0.,#delta a
+                0.]#delta r
+    T_z_der = [-thrust_der[0],#delta t v1
+                -thrust_der[1],#delta t v2
+                -thrust_der[2],#delta t v3
+                -thrust_der[3],#delta t v4
+                0.,#delta t forward
+                elevator_force_coef[1],#delta e
+                0.,#delta a
+                0.]#delta r
     Tau_x_der = [-VTOL.rotor_q0.item(1) * thrust_der[0],
                 -VTOL.rotor_q1.item(1) * thrust_der[1],
                 -VTOL.rotor_q2.item(1) * thrust_der[2],

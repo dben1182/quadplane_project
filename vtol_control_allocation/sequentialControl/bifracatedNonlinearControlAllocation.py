@@ -155,14 +155,14 @@ def nonlinear_ctrl_optimization(x: np.ndarray,
     thrust_torque_achieved = _calc_thrust_torque_achieved(
         x, thrust, torque, elevator_force_coefs, airspeed, v_body)
     
-    thrust_torque_diff = thrust_torque_desired - thrust_torque_achieved
-    diff_norm = 0.5 * thrust_torque_diff.T @ K_Tau @ thrust_torque_diff \
+    thrust_torque_error = thrust_torque_desired - thrust_torque_achieved
+    diff_norm = 0.5 * thrust_torque_error.T @ K_Tau @ thrust_torque_error \
         + .5 * (x - x_des).T @ K_delta @ (x - x_des) #It turns out that this line is not really necessary
 
     #gets the wrench of the Jacobian
     thrust_torque_der = calc_thrust_torque_achieved_der(
         x, thrust, torque, thrust_der, torque_der, elevator_force_coefs, airspeed)
-    diff_norm_der = -thrust_torque_der @ K_Tau @ thrust_torque_diff \
+    diff_norm_der = -thrust_torque_der @ K_Tau @ thrust_torque_error \
         + K_delta @ (x - x_des)
     
     return diff_norm, diff_norm_der

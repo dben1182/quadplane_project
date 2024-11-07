@@ -52,25 +52,29 @@ AR_wing = AR
                 #   Rotor Parameters
 ######################################################################################
 
-rotor_q0 = np.array([[.5, .5, 0]]).T
-rotor_q1 = np.array([[.5, -.5, 0]]).T
-rotor_q2 = np.array([[-.5, .5, 0]]).T
-rotor_q3 = np.array([[-.5, -.5, 0]]).T
-rotor_q4 = np.array([[.5, 0, 0]]).T
+#the positions of each rotor
+rotor_q0 = np.array([[.5, .5, 0]]).T #Front Starboard Prop
+rotor_q1 = np.array([[.5, -.5, 0]]).T #Front Port Prop
+rotor_q2 = np.array([[-.5, .5, 0]]).T #Rear Starboard Prop
+rotor_q3 = np.array([[-.5, -.5, 0]]).T #Rear Port Prop
+rotor_q4 = np.array([[.5, 0, 0]]).T #forward prop
 rotor_qs = [rotor_q0, rotor_q1, rotor_q2, rotor_q3, rotor_q4]
 
-rotor_r0 = np.array([[0, 0, -1]]).T
-rotor_r1 = np.array([[0, 0, -1]]).T
-rotor_r2 = np.array([[0, 0, -1]]).T
-rotor_r3 = np.array([[0, 0, -1]]).T
-rotor_r4 = np.array([[1, 0, 0]]).T
+
+#the normal vector of each rotor
+rotor_r0 = np.array([[0, 0, -1]]).T #Front Starboard Prop
+rotor_r1 = np.array([[0, 0, -1]]).T #Front Port Prop
+rotor_r2 = np.array([[0, 0, -1]]).T #Rear Starboard Prop
+rotor_r3 = np.array([[0, 0, -1]]).T #Rear Port Prop
+rotor_r4 = np.array([[1, 0, 0]]).T #forward prop
 rotor_rs = [rotor_r0, rotor_r1, rotor_r2, rotor_r3, rotor_r4]
 
-prop_dir0 = -1
-prop_dir1 = 1
-prop_dir2 = 1
-prop_dir3 = -1
-prop_dir4 = 1
+#sets the directions of the propellers
+prop_dir0 = -1 #Front Starboard Prop
+prop_dir1 = 1 #Front Port Prop
+prop_dir2 = 1 #Rear Starboard Prop
+prop_dir3 = -1 #Rear Port Prop
+prop_dir4 = 1 #forward prop
 prop_dirs = np.array([prop_dir0, prop_dir1, prop_dir2, prop_dir3, prop_dir4])
 
 ######################################################################################
